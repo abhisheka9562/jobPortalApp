@@ -10,6 +10,7 @@ import com.abs.jobms.job.dto.JobDto;
 import com.abs.jobms.job.external.Company;
 import com.abs.jobms.job.external.Review;
 import com.abs.jobms.job.mapper.JobToJobDto;
+import feign.FeignException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
@@ -29,8 +30,6 @@ public class JobServiceImpl implements JobService
     CompanyClient companyClient;
     ReviewClient reviewClient;
 
-    @Autowired
-    RestTemplate restTemplate;
 
 
 
@@ -65,16 +64,29 @@ public class JobServiceImpl implements JobService
         {
             return null;
         }
-        Company company=companyClient.getCompany(job.getCompanyId());
+        Company company=companyClient.getCompanyById(job.getCompanyId());
         List<Review> reviews=reviewClient.getReviews(job.getCompanyId());
         return JobToJobDto.convertJobToJobDto(job,company,reviews);
     }
 
-    @Override
-    public void createJob(Job job)
+    public Company getCompanyById(Long companyId)
     {
-        //job.setId(nextId++);
+        try {
+            return companyClient.getCompanyById(companyId);
+        } catch(FeignException.NotFound e){
+            return null;
+        }
+    }
+
+    @Override
+    public boolean createJob(Job job)
+    {
+        if(getCompanyById(job.getCompanyId())==null)
+        {
+            return false;
+        }
         jobRepository.save(job);
+        return true;
     }
 
     @Override
