@@ -4,6 +4,7 @@ package com.abs.companyms.company.impl;
 import com.abs.companyms.company.Company;
 import com.abs.companyms.company.CompanyRepository;
 import com.abs.companyms.company.CompanyService;
+import com.abs.companyms.company.publisher.CompanyEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -12,10 +13,11 @@ import java.util.List;
 public class CompanyServiceImpl implements CompanyService
 {
    private CompanyRepository companyRepository;
+   private CompanyEventPublisher companyEventPublisher;
 
-    public CompanyServiceImpl(CompanyRepository companyRepository)
-    {
+    public CompanyServiceImpl(CompanyRepository companyRepository, CompanyEventPublisher companyEventPublisher) {
         this.companyRepository = companyRepository;
+        this.companyEventPublisher = companyEventPublisher;
     }
 
     @Override
@@ -53,11 +55,15 @@ public class CompanyServiceImpl implements CompanyService
     @Override
     public boolean deleteCompanyById(Long id)
     {
-       if(companyRepository.existsById(id))
-       {
-           companyRepository.deleteById(id);
-           return true;
+       try {
+           if (companyRepository.existsById(id)) {
+               companyRepository.deleteById(id);
+               companyEventPublisher.publishCompanyDeletedEvent(id);
+               return true;
+           }
+           return false;
+       } catch (Exception e) {
+           return false;
        }
-       return false;
     }
 }
